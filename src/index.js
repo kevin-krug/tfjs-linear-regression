@@ -12,17 +12,16 @@ let trainingFeatures;
 let testingFeatures;
 let trainingLabels;
 let testingLabels;
+const localStorageID = 'house-price-regression';
 
 // utils
 const plot = (points, featureName) => {
   tfvis.render.scatterplot(
       {name: `${featureName} vs House Price`},
-      {values: [points], series: ['original']},
-      {
+      {values: [points], series: ['original']}, {
         xLabel: featureName,
         yLabel: 'Price',
-      },
-  );
+      });
 };
 const normalise = (tensor) => {
   const max = tensor.max();
@@ -104,7 +103,8 @@ const run = async () => {
 
   // update state and enable train button
   document.querySelector('#model-status').innerHTML = 'No model trained';
-  document.querySelector('#train-button')?.removeAttribute('disabled');
+  document.querySelector('#train-button').removeAttribute('disabled');
+  document.querySelector('#load-button').removeAttribute('disabled');
 };
 
 export const predict = async () => {
@@ -112,11 +112,31 @@ export const predict = async () => {
 };
 
 export const load = async () => {
-  alert('Not yet implemented');
+  const storageKey = `localstorage://${localStorageID}`;
+  const models = await tf.io.listModels();
+  const modelInfo = models[storageKey];
+  if (modelInfo) {
+    model = await tf.loadLayersModel(storageKey);
+
+    // show model on visor
+    const layer = model.getLayer(undefined, 0); // 1st and only layer
+    tfvis.show.modelSummary({name: `Model Summary`, tab: `Model`}, model);
+    tfvis.show.layer({name: 'Layer'}, layer);
+
+    // update statuses
+    document.querySelector('#model-status').innerHTML =
+        `Trained (saved ${modelInfo.dateSaved})`;
+    document.querySelector('#test-button').removeAttribute('disabled');
+    document.querySelector('#predict-button').removeAttribute('disabled');
+  } else {
+    alert('Could not load: no model found');
+  }
 };
 
 export const save = async () => {
-  alert('Not yet implemented');
+  const saveResults = await model.save(`localstorage://${localStorageID}`);
+  document.querySelector('#model-status').innerHTML =
+      `Trained (saved ${saveResults.modelArtifactsInfo.dateSaved})`;
 };
 
 export const test = async () => {
@@ -157,6 +177,7 @@ export const train = async () => {
       `Loss ${trainingLoss.toPrecision(5)}\n`;
 
   document.querySelector('#test-button')?.removeAttribute('disabled');
+  document.querySelector('#save-button')?.removeAttribute('disabled');
 };
 
 export const toggleVisor = async () => {
