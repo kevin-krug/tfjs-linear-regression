@@ -10,6 +10,7 @@
   "scripts": {
     "lint": "eslint src/index.js",
     "format": "clang-format -i -style=Google src/index.js",
+    "preserve": "cp scripts/pre-commit .git/hooks/ && chmod +x .git/hooks/pre-commit",
     "serve": "cp src/index.html dist/ && concurrently \"http-server data/ -p 3000 --cors\" \"webpack serve\"",
     "build": "mkdir -p dist/ && webpack && cp src/index.html dist/"
   },

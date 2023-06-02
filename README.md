@@ -13,6 +13,6 @@ This is a minimal example using tfjs with webpack, that trains a linear regressi
 2. Serve the housing data on http://127.0.0.1:3000 and run the dev server on http://127.0.0.1:9000
 
   ```
-  yarn serve
+  yarn run serve
   ```
 
