@@ -4,6 +4,15 @@ import './styles.css';
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
 
+// globals
+let model;
+let normalisedFeature;
+let normalisedLabel;
+let trainingFeatures;
+let testingFeatures;
+let trainingLabels;
+let testingLabels;
+
 // utils
 const plot = (points, featureName) => {
   tfvis.render.scatterplot(
@@ -41,9 +50,9 @@ const trainModel =
         },
       });
     };
-const createModel = () => {
-  const model = tf.sequential();
 
+const createModel = () => {
+  model = tf.sequential();
   model.add(tf.layers.dense({
     units: 1, // single node
     useBias: true,
@@ -54,21 +63,19 @@ const createModel = () => {
   return model;
 };
 
-//
 const run = async () => {
   await tf.ready();
   const houseSalesDataset =
       tf.data.csv('http://127.0.0.1:3000/kc_house_data.csv');
-  const pointsDataset = houseSalesDataset.map(
-      (record) => ({x: record.sqft_living, y: record.price}));
+  const pointsDataset = houseSalesDataset.map((record) => ({
+    x: record.sqft_living,
+    y: record.price,
+  }));
   const points = [];
 
-  await pointsDataset.forEachAsync(
-      (point) => {
-        points.push(point);
-      },
-  );
-  console.log('points', points);
+  await pointsDataset.forEachAsync((point) => {
+    points.push(point);
+  });
 
   if (points.length % 2 !== 0) {
     points.pop();
@@ -80,18 +87,55 @@ const run = async () => {
   const labelTensor = tf.tensor2d(labelValues, [labelValues.length, 1]);
   plot(points, 'Square Feet');
 
-  const normalisedFeature = normalise(featureTensor);
-  const normalisedLabel = normalise(labelTensor);
+  normalisedFeature = normalise(featureTensor);
+  normalisedLabel = normalise(labelTensor);
 
   const trainingSize = Math.round(normalisedFeature.tensor.shape[0] * 0.8);
   const testingSize = Math.round(normalisedFeature.tensor.shape[0] * 0.2);
 
-  const [trainingFeatures, testingFeatures] =
-      tf.split(normalisedFeature.tensor, [trainingSize, testingSize]);
-  const [trainingLabels, testingLabels] =
-      tf.split(normalisedLabel.tensor, [trainingSize, testingSize]);
+  [trainingFeatures, testingFeatures] = tf.split(normalisedFeature.tensor, [
+    trainingSize,
+    testingSize,
+  ]);
+  [trainingLabels, testingLabels] = tf.split(normalisedLabel.tensor, [
+    trainingSize,
+    testingSize,
+  ]);
 
-  const model = createModel();
+  // update state and enable train button
+  document.querySelector('#model-status').innerHTML = 'No model trained';
+  document.querySelector('#train-button')?.removeAttribute('disabled');
+};
+
+export const predict = async () => {
+  alert('Not yet implemented');
+};
+
+export const load = async () => {
+  alert('Not yet implemented');
+};
+
+export const save = async () => {
+  alert('Not yet implemented');
+};
+
+export const test = async () => {
+  const lossTensor = model.evaluate(testingFeatures, testingLabels);
+  const loss = await lossTensor.dataSync(); // data sync returns numeric value
+
+  document.querySelector('#testing-status').innerHTML =
+      `Testing set loss: ${Number(loss).toPrecision(5)}`;
+};
+
+export const train = async () => {
+  // disable all buttons
+  ['train', 'test', 'load', 'predict', 'save'].forEach((id) => {
+    document.querySelector(`#${id}-button`)
+        ?.setAttribute('disabled', 'disabled');
+  });
+  document.querySelector('#model-status').innerHTML = 'Training...';
+
+  model = createModel();
 
   model.summary();
   const layer = model.getLayer(undefined, 0); // 1st and only layer
@@ -109,28 +153,10 @@ const run = async () => {
   const result = await trainModel(model, trainingFeatures, trainingLabels);
   const trainingLoss = result.history.loss.pop();
 
-  const lossTensor = model.evaluate(testingFeatures, testingLabels);
-  const loss = await lossTensor.dataSync(); // data sync returns numeric value
-};
+  document.querySelector('#model-status').innerHTML = 'Trained (unsaved) \n' +
+      `Loss ${trainingLoss.toPrecision(5)}\n`;
 
-export const predict = async () => {
-  alert('Not yet implemented');
-};
-
-export const load = async () => {
-  alert('Not yet implemented');
-};
-
-export const save = async () => {
-  alert('Not yet implemented');
-};
-
-export const test = async () => {
-  alert('Not yet implemented');
-};
-
-export const train = async () => {
-  alert('Not yet implemented');
+  document.querySelector('#test-button')?.removeAttribute('disabled');
 };
 
 export const toggleVisor = async () => {
