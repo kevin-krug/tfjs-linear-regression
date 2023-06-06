@@ -13,15 +13,45 @@ let testingFeatures;
 let trainingLabels;
 let testingLabels;
 const localStorageID = 'house-price-regression';
+const points = [];
 
 // utils
-const plot = (points, featureName) => {
+const plot = (points, featureName, predictedPoints = null) => {
+  const values = [points];
+  const series = ['original'];
+
+  if (Array.isArray(predictedPoints)) {
+    values.push(predictedPoints);
+    series.push('prediceted');
+  }
+
   tfvis.render.scatterplot(
-      {name: `${featureName} vs House Price`},
-      {values: [points], series: ['original']}, {
+      {name: `${featureName} vs House Price`}, {values, series}, {
         xLabel: featureName,
         yLabel: 'Price',
       });
+};
+const plotPrediction = async () => {
+  const [xs, ys] = tf.tidy(() => {
+    const normalisedXs =
+        tf.linspace(0, 1, 100); // range of 100 points within 0 and 1
+    const normalisedYs = model.predict(
+        normalisedXs.reshape([100, 1])); // predict expects 2d tensor
+
+    const xs =
+        denormalise(normalisedXs, normalisedFeature.min, normalisedFeature.max);
+    const ys =
+        denormalise(normalisedYs, normalisedLabel.min, normalisedLabel.max);
+
+    return [xs.dataSync(), ys.dataSync()];
+  });
+
+  console.log('XS', xs);
+  console.log('YS', ys);
+
+  const predictedPoints = Array.from(xs).map((x, i) => ({x, y: ys[i]}));
+
+  await plot(points, 'Square feet', predictedPoints);
 };
 const normalise = (tensor, previousMin = null, previousMax = null) => {
   const max = previousMax ?? tensor.max();
@@ -45,6 +75,12 @@ const trainModel =
         batchSize: 32,
         epochs: 20,
         callbacks: {
+          onEpochBegin: async () => {
+            await plotPrediction();
+            // update layer summary showing current values of the weights
+            const layer = model.getLayer(undefined, 0); // 1st and only layer
+            tfvis.show.layer({name: 'Layer'}, layer);
+          },
           onEpochEnd,
         },
       });
@@ -70,7 +106,6 @@ const run = async () => {
     x: record.sqft_living,
     y: record.price,
   }));
-  const points = [];
 
   await pointsDataset.forEachAsync((point) => {
     points.push(point);
@@ -84,7 +119,6 @@ const run = async () => {
   const featureTensor = tf.tensor2d(featureValues, [featureValues.length, 1]);
   const labelValues = points.map((p) => p.y);
   const labelTensor = tf.tensor2d(labelValues, [labelValues.length, 1]);
-  plot(points, 'Square Feet');
 
   normalisedFeature = normalise(featureTensor);
   normalisedLabel = normalise(labelTensor);
@@ -140,6 +174,8 @@ export const load = async () => {
     tfvis.show.modelSummary({name: `Model Summary`, tab: `Model`}, model);
     tfvis.show.layer({name: 'Layer'}, layer);
 
+    await plotPrediction();
+
     // update statuses
     document.querySelector('#model-status').innerHTML =
         `Trained (saved ${modelInfo.dateSaved})`;
@@ -176,7 +212,6 @@ export const train = async () => {
 
   model.summary();
   const layer = model.getLayer(undefined, 0); // 1st and only layer
-
   tfvis.show.modelSummary({name: `Model Summary`, tab: `Model`}, model);
   tfvis.show.layer({name: 'Layer'}, layer);
 
@@ -186,6 +221,8 @@ export const train = async () => {
     loss: 'meanSquaredError',
     optimizer,
   });
+
+  await plotPrediction();
 
   const result = await trainModel(model, trainingFeatures, trainingLabels);
   const trainingLoss = result.history.loss.pop();
