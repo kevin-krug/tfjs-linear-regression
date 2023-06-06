@@ -23,9 +23,9 @@ const plot = (points, featureName) => {
         yLabel: 'Price',
       });
 };
-const normalise = (tensor) => {
-  const max = tensor.max();
-  const min = tensor.min();
+const normalise = (tensor, previousMin = null, previousMax = null) => {
+  const max = previousMax ?? tensor.max();
+  const min = previousMin ?? tensor.min();
   const normalisedTensor = tensor.sub(min).div(max.sub(min));
 
   return {tensor: normalisedTensor, min, max};
@@ -35,7 +35,7 @@ const denormalise = (tensor, min, max) => {
 };
 const trainModel =
     async (model, trainingFeatureTensor, trainingLabelTensor) => {
-      const {onBatchEnd, onEpochEnd} = tfvis.show.fitCallbacks(
+      const {onEpochEnd} = tfvis.show.fitCallbacks(
           {
             name: 'Training Performance',
           },
@@ -108,7 +108,24 @@ const run = async () => {
 };
 
 export const predict = async () => {
-  alert('Not yet implemented');
+  const predictionInput =
+      parseInt(document.getElementById('prediction-input').value);
+  if (isNaN(predictionInput)) {
+    alert('Please enter a valid number');
+  } else {
+    tf.tidy(() => {
+      const inputTensor = tf.tensor1d([predictionInput]);
+      const normalisedInput =
+          normalise(inputTensor, normalisedFeature.min, normalisedFeature.max);
+      const normalisedOutputTensor = model.predict(normalisedInput.tensor);
+      const outputTensor = denormalise(
+          normalisedOutputTensor, normalisedLabel.min, normalisedLabel.max);
+      const outputValue = outputTensor.dataSync()[0];
+      const outputValueRounded = Math.round(outputValue / 1000) * 1000;
+      document.getElementById('prediction-output').innerHTML =
+          `$${outputValueRounded}`;
+    });
+  }
 };
 
 export const load = async () => {
