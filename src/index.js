@@ -34,9 +34,9 @@ const plot = (points, featureName, predictedPoints = null) => {
 const plotPrediction = async () => {
   const [xs, ys] = tf.tidy(() => {
     const normalisedXs =
-        tf.linspace(0, 1, 100); // range of 100 points within 0 and 1
+        tf.linspace(0, 1, 100);  // range of 100 points within 0 and 1
     const normalisedYs = model.predict(
-        normalisedXs.reshape([100, 1])); // predict expects 2d tensor
+        normalisedXs.reshape([100, 1]));  // predict expects 2d tensor
 
     const xs =
         denormalise(normalisedXs, normalisedFeature.min, normalisedFeature.max);
@@ -65,33 +65,33 @@ const denormalise = (tensor, min, max) => {
 };
 const trainModel =
     async (model, trainingFeatureTensor, trainingLabelTensor) => {
-      const {onEpochEnd} = tfvis.show.fitCallbacks(
-          {
-            name: 'Training Performance',
-          },
-          ['loss']);
+  const {onEpochEnd} = tfvis.show.fitCallbacks(
+      {
+        name: 'Training Performance',
+      },
+      ['loss']);
 
-      return model.fit(trainingFeatureTensor, trainingLabelTensor, {
-        batchSize: 32,
-        epochs: 20,
-        callbacks: {
-          onEpochBegin: async () => {
-            await plotPrediction();
-            // update layer summary showing current values of the weights
-            const layer = model.getLayer(undefined, 0); // 1st and only layer
-            tfvis.show.layer({name: 'Layer'}, layer);
-          },
-          onEpochEnd,
-        },
-      });
-    };
+  return model.fit(trainingFeatureTensor, trainingLabelTensor, {
+    batchSize: 32,
+    epochs: 20,
+    callbacks: {
+      onEpochBegin: async () => {
+        await plotPrediction();
+        // update layer summary showing current values of the weights
+        const layer = model.getLayer(undefined, 0);  // 1st and only layer
+        tfvis.show.layer({name: 'Layer'}, layer);
+      },
+      onEpochEnd,
+    },
+  });
+};
 
 const createModel = () => {
   model = tf.sequential();
   model.add(tf.layers.dense({
-    units: 1, // single node
+    units: 1,  // single node
     useBias: true,
-    activation: 'linear', // no threshold
+    activation: 'linear',  // no threshold
     inputDim: 1,
   }));
 
@@ -103,9 +103,9 @@ const run = async () => {
   const houseSalesDataset =
       tf.data.csv('http://127.0.0.1:3000/kc_house_data.csv');
   const pointsDataset = houseSalesDataset.map((record) => ({
-    x: record.sqft_living,
-    y: record.price,
-  }));
+                                                x: record.sqft_living,
+                                                y: record.price,
+                                              }));
 
   await pointsDataset.forEachAsync((point) => {
     points.push(point);
@@ -170,7 +170,7 @@ export const load = async () => {
     model = await tf.loadLayersModel(storageKey);
 
     // show model on visor
-    const layer = model.getLayer(undefined, 0); // 1st and only layer
+    const layer = model.getLayer(undefined, 0);  // 1st and only layer
     tfvis.show.modelSummary({name: `Model Summary`, tab: `Model`}, model);
     tfvis.show.layer({name: 'Layer'}, layer);
 
@@ -194,7 +194,7 @@ export const save = async () => {
 
 export const test = async () => {
   const lossTensor = model.evaluate(testingFeatures, testingLabels);
-  const loss = await lossTensor.dataSync(); // data sync returns numeric value
+  const loss = await lossTensor.dataSync();  // data sync returns numeric value
 
   document.querySelector('#testing-status').innerHTML =
       `Testing set loss: ${Number(loss).toPrecision(5)}`;
@@ -211,7 +211,7 @@ export const train = async () => {
   model = createModel();
 
   model.summary();
-  const layer = model.getLayer(undefined, 0); // 1st and only layer
+  const layer = model.getLayer(undefined, 0);  // 1st and only layer
   tfvis.show.modelSummary({name: `Model Summary`, tab: `Model`}, model);
   tfvis.show.layer({name: 'Layer'}, layer);
 

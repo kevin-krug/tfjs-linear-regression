@@ -7,12 +7,12 @@ This is a minimal example using tfjs with webpack, that trains a linear regressi
 1. Install dependencies
 
   ```sh
-  yarn
+  pnpm i
   ```
 
 2. Serve the housing data on http://127.0.0.1:3000 and run the dev server on http://127.0.0.1:9000
 
   ```
-  yarn run serve
+  pnpm run serve
   ```
 
