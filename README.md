@@ -1,6 +1,6 @@
-# Linear Regression with TensorFlow.js
+# Machine Learning with TensorFlow.js
 
-This is a minimal example using tfjs with webpack, that trains a linear regression model to predict housing prices based on living square feet.
+This is a minimal example using tfjs with webpack, that trains a linear regression model to predict housing prices based on living square feet. 
 
 ## Run
 
@@ -16,3 +16,7 @@ This is a minimal example using tfjs with webpack, that trains a linear regressi
   pnpm run serve
   ```
 
+## Resources
+
+- https://tech.courses/machine-learning/tensorflow-js-javascript/
+- https://js.tensorflow.org/api/latest/
